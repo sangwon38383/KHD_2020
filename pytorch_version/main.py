@@ -10,6 +10,7 @@ from nsml.constants import DATASET_PATH, GPU_NUM
 import torch 
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader 
+from efficientnet_pytorch import EfficientNet
 
 ######################## DONOTCHANGE ###########################
 def bind_model(model):
@@ -62,8 +63,7 @@ def label_loader (root_path, keys):
     for key in keys:
         labels = [labels_dict[x] for x in keys]
     return labels
-############################################################
-
+############################################################)
 
 class PathDataset(Dataset): 
     def __init__(self,image_path, labels=None, test_mode= True): 
@@ -81,9 +81,7 @@ class PathDataset(Dataset):
         if self.mode:
             return torch.tensor(im,dtype=torch.float32)
         else:
-            return torch.tensor(im,dtype=torch.float32),\
-                 torch.tensor(self.labels[index] ,dtype=torch.long)
-
+            return torch.tensor(im, dtype=torch.float32), torch.tensor(self.labels[index], dtype=torch.long)          
     def __len__(self): 
         return self.len
 
@@ -100,7 +98,7 @@ if __name__ == '__main__':
     ######################################################################
 
     # hyperparameters
-    args.add_argument('--epoch', type=int, default=1)
+    args.add_argument('--epoch', type=int, default=1000)
     args.add_argument('--batch_size', type=int, default=64) 
     args.add_argument('--learning_rate', type=int, default=0.0001)
 
@@ -114,7 +112,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # model setting ## 반드시 이 위치에서 로드해야함
-    model = arch.CNN().to(device)
+    model = EfficientNet.from_pretrained('efficientnet-b0').to(device)
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -145,15 +143,12 @@ if __name__ == '__main__':
             for i, (images, labels) in enumerate(batch_loader):
                 images = images.to(device)
                 labels = labels.to(device)
-                
-                # Forward pass
                 outputs = model(images)
                 loss = criterion(outputs, labels)
-                
-                # Backward and optimize
                 optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
+                optimizer.step()               
                 
+              
             nsml.report(summary=True, step=epoch, epoch_total=num_epochs, loss=loss.item())#, acc=train_acc)
             nsml.save(epoch)
